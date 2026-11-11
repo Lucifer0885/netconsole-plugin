@@ -7,13 +7,22 @@ export type CleanTasksRequest = {
   id: string;
 };
 
+// Sent straight away so the patch knows the page script is there and working on it.
+export type CleanTasksAck = {
+  source: "netconsole";
+  type: "clean-tasks-ack";
+  id: string;
+};
+
 export type CleanTasksResult = {
   source: "netconsole";
   type: "clean-tasks-done";
   id: string;
   cleaned: number;
   failed: number;
-  error?: "not-ready" | "list-failed";
+  // no-reply: the page script never answered (not loaded, or an older build of it).
+  // timeout: it answered but the clean took too long.
+  error?: "not-ready" | "list-failed" | "no-reply" | "timeout";
 };
 
 export const cleanTaskType = "CLEAN_PC";

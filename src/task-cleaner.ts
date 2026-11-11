@@ -1,4 +1,10 @@
-import { cleanTaskType, storeIdFromUrl, type CleanTasksRequest, type CleanTasksResult } from "./store-tasks";
+import {
+  cleanTaskType,
+  storeIdFromUrl,
+  type CleanTasksAck,
+  type CleanTasksRequest,
+  type CleanTasksResult,
+} from "./store-tasks";
 
 // Runs in the page. It reuses the headers eplay itself sends (login token, store slug),
 // kept in memory only, so the calls act exactly like clicking each task's check button.
@@ -70,6 +76,8 @@ export function answerCleanRequests(send: typeof fetch): void {
     const data = event.data as Partial<CleanTasksRequest> | null;
     if (data?.source !== "netconsole" || data.type !== "clean-tasks" || typeof data.id !== "string") return;
     const id = data.id;
+    const ack: CleanTasksAck = { source: "netconsole", type: "clean-tasks-ack", id };
+    window.postMessage(ack, location.origin);
     const reply = (result: Omit<CleanTasksResult, "source" | "type" | "id">) => {
       const message: CleanTasksResult = { source: "netconsole", type: "clean-tasks-done", id, ...result };
       window.postMessage(message, location.origin);

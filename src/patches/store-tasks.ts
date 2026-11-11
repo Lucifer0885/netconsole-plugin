@@ -1,31 +1,48 @@
 import { lastAutoClean, settings } from "../settings";
-import type { CleanTasksRequest, CleanTasksResult } from "../store-tasks";
+import type { CleanTasksAck, CleanTasksRequest, CleanTasksResult } from "../store-tasks";
 import type { Patch } from "./types";
 
 const onEplay = location.hostname === "eplay.netconsole.me";
-const pending = new Map<string, (result: CleanTasksResult) => void>();
+// How long to wait for the page script to say it got the request, then for the clean to finish.
+const ackWait = 3_000;
+const doneWait = 120_000;
+
+type Waiter = { acked: () => void; done: (result: CleanTasksResult) => void };
+const pending = new Map<string, Waiter>();
 let running = false;
 let note = "";
 let noteTimer = 0;
 
 window.addEventListener("message", (event) => {
   if (event.source !== window) return;
-  const data = event.data as Partial<CleanTasksResult> | null;
-  if (data?.source !== "netconsole" || data.type !== "clean-tasks-done" || typeof data.id !== "string") return;
-  pending.get(data.id)?.(data as CleanTasksResult);
-  pending.delete(data.id);
+  const data = event.data as Partial<CleanTasksResult | CleanTasksAck> | null;
+  if (data?.source !== "netconsole" || typeof data.id !== "string") return;
+  const waiter = pending.get(data.id);
+  if (!waiter) return;
+  if (data.type === "clean-tasks-ack") waiter.acked();
+  if (data.type === "clean-tasks-done") {
+    pending.delete(data.id);
+    waiter.done(data as CleanTasksResult);
+  }
 });
 
 function requestClean(): Promise<CleanTasksResult> {
   const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   return new Promise((resolve) => {
-    const timeout = window.setTimeout(() => {
+    const fail = (error: CleanTasksResult["error"]) => {
       pending.delete(id);
-      resolve({ source: "netconsole", type: "clean-tasks-done", id, cleaned: 0, failed: 0, error: "list-failed" });
-    }, 60_000);
-    pending.set(id, (result) => {
-      window.clearTimeout(timeout);
-      resolve(result);
+      resolve({ source: "netconsole", type: "clean-tasks-done", id, cleaned: 0, failed: 0, error });
+    };
+    let timer = window.setTimeout(() => fail("no-reply"), ackWait);
+    pending.set(id, {
+      acked: () => {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(() => fail("timeout"), doneWait);
+      },
+      done: (result) => {
+        window.clearTimeout(timer);
+        resolve(result);
+      },
     });
     const message: CleanTasksRequest = { source: "netconsole", type: "clean-tasks", id };
     window.postMessage(message, location.origin);
@@ -61,6 +78,8 @@ function showNote(text: string): void {
 
 function describe(result: CleanTasksResult): string {
   if (result.error === "not-ready") return "Not ready yet, try again";
+  if (result.error === "no-reply") return "No reply";
+  if (result.error === "timeout") return "Took too long";
   if (result.error) return "Couldn't load tasks";
   if (!result.cleaned && !result.failed) return "Nothing to clean";
   return result.failed ? `Cleaned ${result.cleaned}, ${result.failed} failed` : `Cleaned ${result.cleaned}`;
@@ -72,6 +91,11 @@ async function cleanNow(): Promise<CleanTasksResult | null> {
   paint(document);
   try {
     const result = await requestClean();
+    if (result.error === "no-reply") {
+      console.warn(
+        "[netconsole] Clean all: the page script didn't answer. Reload the extension (or restart `npm run dev`) and refresh the page.",
+      );
+    }
     if (result.cleaned) refreshList(document);
     return result;
   } finally {
@@ -124,7 +148,7 @@ async function autoCleanTick(): Promise<void> {
   await lastAutoClean.setValue(Date.now());
   const result = await cleanNow();
   // Not ready means eplay hasn't made a request we can borrow headers from yet. Retry soon.
-  if (result?.error === "not-ready") await lastAutoClean.setValue(last);
+  if (result?.error === "not-ready" || result?.error === "no-reply") await lastAutoClean.setValue(last);
   if (result?.cleaned) showNote(`Auto cleaned ${result.cleaned}`);
 }
 
