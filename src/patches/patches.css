@@ -341,6 +341,72 @@ html.nc-dark .overview-dialog [class*="border-blue-100"] {
   border-color: #35598a !important;
 }
 
+/* eplay Start Visit, package step: search bar, filter pills, action cards, gear list. */
+html.nc-dark .bg-surface {
+  background-color: #1e1e1e !important;
+}
+
+html.nc-dark .bg-surface-muted {
+  background-color: #242424 !important;
+}
+
+html.nc-dark .q-item__label--caption {
+  color: rgba(255, 255, 255, 0.62) !important;
+}
+
+html.nc-dark [class*="border-slate-200"],
+html.nc-dark [class*="border-slate-300"] {
+  border-color: #3a3a3a !important;
+}
+
+html.nc-dark .bg-brand-100,
+html.nc-dark .bg-grey-3 {
+  background-color: #333 !important;
+}
+
+html.nc-dark .text-brand-700 {
+  color: #9fe0b5 !important;
+}
+
+html.nc-dark .text-grey-7 {
+  color: #cfcfcf !important;
+}
+
+html.nc-dark .text-negative {
+  color: #ff7b7b !important;
+}
+
+html.nc-dark .q-field--outlined .q-field__control:before {
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+html.nc-dark .q-field--outlined.q-field--highlighted .q-field__control:after {
+  border-color: var(--nc-brand-ink) !important;
+}
+
+/* Package group pills get pastel inline colours; inverting keeps the hue but makes them dark. */
+html.nc-dark .package-pill:not([style*="--q-primary"]) {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+html.nc-dark .action-card {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--action-color) 26%, #1e1e1e), #1e1e1e 70%) !important;
+  border-color: color-mix(in srgb, var(--action-color) 55%, #9aa4b2) !important;
+}
+
+html.nc-dark [style*="--action-color"] .action-card__label,
+html.nc-dark [style*="--action-color"] .action-card__title {
+  color: color-mix(in srgb, var(--action-color) 45%, #fff) !important;
+}
+
+html.nc-dark [style*="--action-color"] .action-card__description {
+  color: color-mix(in srgb, var(--action-color) 30%, #cfd6e0) !important;
+}
+
+html.nc-dark [style*="--action-color"] .action-card__icon {
+  color: color-mix(in srgb, var(--action-color) 35%, transparent) !important;
+}
+
 .nc-visit-note {
   display: flex;
   gap: 8px;
@@ -366,4 +432,135 @@ html.nc-dark .overview-dialog [class*="border-blue-100"] {
 html.nc-dark .nc-visit-note {
   border-top-color: #35598a;
   color: #f4f7ff;
+}
+
+.nc-client-pill > :not(.nc-client-kinds) {
+  display: none !important;
+}
+
+.nc-client-kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.nc-client-kind {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 6rem;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 0.75rem;
+  background: rgb(255 255 255 / 0.1);
+  color: #fff;
+}
+
+.nc-client-kind .q-icon {
+  font-size: 20px;
+  color: rgb(255 255 255 / 0.85);
+}
+
+.nc-client-kind__text {
+  line-height: 1.15;
+}
+
+.nc-client-kind__value {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.nc-client-kind__label {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgb(255 255 255 / 0.75);
+  white-space: nowrap;
+}
+
+.nc-minutes {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+}
+
+.nc-minutes input {
+  width: 72px;
+  padding: 4px 8px;
+  border: 1px solid rgba(127, 127, 127, 0.5);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+}
+
+.nc-minutes input:disabled {
+  opacity: 0.5;
+}
+
+.nc-row .nc-minutes span {
+  margin: 0;
+  font-size: 13px;
+}
+
+/* The drawer is narrow: tight spacing keeps the title and task count on one line. */
+.nc-clean-side {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 2px;
+  padding-left: 4px !important;
+}
+
+.nc-clean-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--q-primary, #0c2556);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.nc-clean-all .q-icon {
+  font-size: 14px;
+}
+
+.nc-clean-all:hover:not(:disabled) {
+  background: rgba(127, 127, 127, 0.12);
+}
+
+.nc-clean-all:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+html.nc-dark .nc-clean-all {
+  color: #8ab4f8;
+}
+
+.nc-shift-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 2px 4px 0;
+  font-size: 14px;
+}
+
+.nc-shift-total__label {
+  color: #616161;
+}
+
+.nc-shift-total__value {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+html.nc-dark .nc-shift-total__label {
+  color: #bdbdbd;
 }

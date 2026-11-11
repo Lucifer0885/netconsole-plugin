@@ -1,23 +1,52 @@
+import { isClientListUrl, kindsFromClients, type ClientStatsMessage } from "../src/client-stats";
+import { answerCleanRequests, noteHeader, noteRequest } from "../src/task-cleaner";
 import { notesFromVisit, visitIdFromUrl, type VisitNoteMessage } from "../src/visit-notes";
+
+function wanted(url: string): boolean {
+  return visitIdFromUrl(url) !== null || isClientListUrl(url);
+}
 
 function publish(url: string, body: unknown): void {
   const id = visitIdFromUrl(url);
-  if (!id) return;
-  const message: VisitNoteMessage = {
-    source: "netconsole",
-    type: "visit",
-    id,
-    notes: notesFromVisit(body),
-  };
-  window.postMessage(message, location.origin);
+  if (id) {
+    const message: VisitNoteMessage = {
+      source: "netconsole",
+      type: "visit",
+      id,
+      notes: notesFromVisit(body),
+    };
+    window.postMessage(message, location.origin);
+    return;
+  }
+  if (isClientListUrl(url)) {
+    const kinds = kindsFromClients(body);
+    if (!kinds) return;
+    lastClients = { source: "netconsole", type: "clients", kinds };
+    window.postMessage(lastClients, location.origin);
+  }
 }
+
+let lastClients: ClientStatsMessage | null = null;
+
+// The patch asks again once it loads, in case the list arrived before it was listening.
+function answerReplays(): void {
+  window.addEventListener("message", (event) => {
+    if (event.source !== window) return;
+    const data = event.data as { source?: unknown; type?: unknown } | null;
+    if (data?.source !== "netconsole" || data.type !== "clients-replay") return;
+    if (lastClients) window.postMessage(lastClients, location.origin);
+  });
+}
+
+const originalFetch = window.fetch.bind(window);
 
 function hookFetch(): void {
   const original = window.fetch;
   window.fetch = function (input, init) {
     return original.call(this, input, init).then((response) => {
-      const url = typeof input === "string" ? input : input instanceof Request ? input.url : "";
-      if (visitIdFromUrl(url)) {
+      const url =
+        typeof input === "string" ? input : input instanceof Request ? input.url : input instanceof URL ? input.href : "";
+      if (wanted(url)) {
         void response
           .clone()
           .json()
@@ -33,18 +62,25 @@ function hookXhr(): void {
   const urls = new WeakMap<XMLHttpRequest, string>();
   const originalOpen = XMLHttpRequest.prototype.open;
   const originalSend = XMLHttpRequest.prototype.send;
+  const originalSetHeader = XMLHttpRequest.prototype.setRequestHeader;
   XMLHttpRequest.prototype.open = function (this: XMLHttpRequest, method: string, url: string | URL, ...rest: unknown[]) {
     urls.set(this, String(url));
+    noteRequest(String(url));
     return originalOpen.apply(this, [method, url, ...rest] as Parameters<XMLHttpRequest["open"]>);
   } as XMLHttpRequest["open"];
+  XMLHttpRequest.prototype.setRequestHeader = function (this: XMLHttpRequest, name: string, value: string) {
+    const url = urls.get(this);
+    if (url) noteHeader(url, name, value);
+    return originalSetHeader.call(this, name, value);
+  };
   XMLHttpRequest.prototype.send = function (this: XMLHttpRequest, body?: Document | XMLHttpRequestBodyInit | null) {
     this.addEventListener("load", () => {
       const url = urls.get(this);
-      if (!url) return;
+      if (!url || !wanted(url)) return;
       try {
         publish(url, JSON.parse(this.responseText));
       } catch {
-        // The visit payload is JSON. Anything else is ignored.
+        // These payloads are JSON. Anything else is ignored.
       }
     });
     return originalSend.call(this, body);
@@ -58,5 +94,7 @@ export default defineContentScript({
   main() {
     hookFetch();
     hookXhr();
+    answerReplays();
+    if (location.hostname === "eplay.netconsole.me") answerCleanRequests(originalFetch);
   },
 });

@@ -5,3 +5,4 @@ node_modules
 stats.html
 stats-*.json
 *.zip
+graphify-out/
