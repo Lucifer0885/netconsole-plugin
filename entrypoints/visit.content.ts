@@ -1,6 +1,6 @@
 import { isClientListUrl, kindsFromClients, type ClientStatsMessage } from "../src/client-stats";
 import { answerCleanRequests, noteHeader, noteRequest } from "../src/task-cleaner";
-import { notesFromVisit, visitIdFromUrl, type VisitNoteMessage } from "../src/visit-notes";
+import { entriesFromClients, entryFromVisit, visitIdFromUrl, type VisitNoteMessage } from "../src/visit-notes";
 
 function wanted(url: string): boolean {
   return visitIdFromUrl(url) !== null || isClientListUrl(url);
@@ -9,22 +9,23 @@ function wanted(url: string): boolean {
 function publish(url: string, body: unknown): void {
   const id = visitIdFromUrl(url);
   if (id) {
-    const message: VisitNoteMessage = {
-      source: "netconsole",
-      type: "visit",
-      id,
-      notes: notesFromVisit(body),
-    };
+    const visit = entryFromVisit(id, body);
+    if (!visit) return;
+    const message: VisitNoteMessage = { source: "netconsole", type: "visit-notes", single: true, visits: [visit] };
     window.postMessage(message, location.origin);
     return;
   }
   if (isClientListUrl(url)) {
+    lastNotes = { source: "netconsole", type: "visit-notes", single: false, visits: entriesFromClients(body) };
+    window.postMessage(lastNotes, location.origin);
     const kinds = kindsFromClients(body);
     if (!kinds) return;
     lastClients = { source: "netconsole", type: "clients", kinds };
     window.postMessage(lastClients, location.origin);
   }
 }
+
+let lastNotes: VisitNoteMessage | null = null;
 
 let lastClients: ClientStatsMessage | null = null;
 
@@ -35,6 +36,7 @@ function answerReplays(): void {
     const data = event.data as { source?: unknown; type?: unknown } | null;
     if (data?.source !== "netconsole" || data.type !== "clients-replay") return;
     if (lastClients) window.postMessage(lastClients, location.origin);
+    if (lastNotes) window.postMessage(lastNotes, location.origin);
   });
 }
 
