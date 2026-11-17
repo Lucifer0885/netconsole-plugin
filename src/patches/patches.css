@@ -572,6 +572,102 @@ html.nc-dark .nc-visit-note {
     border-radius: 0.75rem;
     background: rgb(255 255 255 / 0.1);
     color: #fff;
+    position: relative;
+    cursor: default;
+    outline: none;
+    transition: background 0.15s;
+}
+
+.nc-client-kind:hover,
+.nc-client-kind:focus-visible {
+    background: rgb(255 255 255 / 0.18);
+}
+
+/* Hover card under each chip. Anchored to the chip's right edge because the pill sits at
+   the right of the map, so the card never runs off screen. */
+.nc-client-tip {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    z-index: 50;
+    min-width: 260px;
+    padding: 14px 16px;
+    border: 1px solid rgb(255 255 255 / 0.12);
+    border-radius: 10px;
+    background: rgb(24 24 27 / 0.96);
+    box-shadow: 0 10px 30px rgb(0 0 0 / 0.35);
+    color: #f4f4f5;
+    font-size: 15px;
+    line-height: 1.4;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-4px);
+    transition: opacity 0.12s, transform 0.12s, visibility 0.12s;
+    pointer-events: none;
+}
+
+.nc-client-tip::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    right: 22px;
+    width: 10px;
+    height: 10px;
+    border-top: 1px solid rgb(255 255 255 / 0.12);
+    border-left: 1px solid rgb(255 255 255 / 0.12);
+    background: inherit;
+    transform: rotate(45deg);
+}
+
+.nc-client-kind:hover .nc-client-tip,
+.nc-client-kind:focus-visible .nc-client-tip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.nc-client-tip__title {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    font-size: 16px;
+    border-bottom: 1px solid rgb(255 255 255 / 0.1);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.nc-client-tip__row {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 3px 0;
+    color: rgb(244 244 245 / 0.75);
+    white-space: nowrap;
+}
+
+.nc-client-tip__row strong {
+    color: #fff;
+    font-weight: 600;
+}
+
+.nc-client-tip__row[data-tone="free"] strong {
+    color: #4ade80;
+}
+
+.nc-client-tip__row[data-tone="busy"] strong {
+    color: #60a5fa;
+}
+
+.nc-client-tip__row[data-tone="broken"] strong {
+    color: #f87171;
+}
+
+.nc-client-tip__note {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgb(255 255 255 / 0.1);
+    color: rgb(244 244 245 / 0.6);
+    font-size: 13px;
+    white-space: normal;
 }
 
 .nc-client-kind .q-icon {

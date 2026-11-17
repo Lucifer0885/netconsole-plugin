@@ -22,11 +22,51 @@ function findPill(root: Document): HTMLElement | null {
   return pill instanceof HTMLElement ? pill : null;
 }
 
+function tipRow(root: Document, label: string, value: string, tone?: string): HTMLElement {
+  const row = root.createElement("div");
+  row.className = "nc-client-tip__row";
+  if (tone) row.dataset.tone = tone;
+  const name = root.createElement("span");
+  name.textContent = label;
+  const amount = root.createElement("strong");
+  amount.textContent = value;
+  row.append(name, amount);
+  return row;
+}
+
+// The hover card: what each number means, plus players. Built from text nodes only.
+function tip(root: Document, kind: ClientKind, free: number): HTMLElement {
+  const card = root.createElement("div");
+  card.className = "nc-client-tip";
+  card.setAttribute("role", "tooltip");
+
+  const title = root.createElement("div");
+  title.className = "nc-client-tip__title";
+  title.textContent = `${kind.label} · ${kind.total} ${kind.unit}`;
+  card.append(title);
+
+  card.append(
+    tipRow(root, "Free", String(free), "free"),
+    tipRow(root, "In use", String(kind.busy), "busy"),
+  );
+  if (kind.broken) card.append(tipRow(root, "Out of order", String(kind.broken), "broken"));
+  card.append(tipRow(root, "Players now", kind.seatsPerTable ? `${kind.players} / ${kind.seats} seats` : String(kind.players)));
+
+  if (kind.seatsPerTable) {
+    const note = root.createElement("div");
+    note.className = "nc-client-tip__note";
+    note.textContent = `${kind.seatsPerTable} seats per table. A table counts as in use once anyone is playing on it.`;
+    card.append(note);
+  }
+  return card;
+}
+
 function chip(root: Document, kind: ClientKind): HTMLElement {
   const free = kind.total - kind.busy - kind.broken;
   const el = root.createElement("div");
   el.className = "nc-client-kind";
-  el.title = `${kind.label}: ${kind.busy} occupied, ${free} free, ${kind.broken} out of order, ${kind.total} total`;
+  el.tabIndex = 0;
+  el.setAttribute("aria-label", `${kind.label}: ${free} of ${kind.total} free`);
 
   const icon = root.createElement("i");
   icon.className = `q-icon mdi ${kind.icon}`;
@@ -42,7 +82,7 @@ function chip(root: Document, kind: ClientKind): HTMLElement {
   label.textContent = kind.broken ? `${kind.label} free · ${kind.broken} down` : `${kind.label} free`;
   text.append(value, label);
 
-  el.append(icon, text);
+  el.append(icon, text, tip(root, kind, free));
   return el;
 }
 
