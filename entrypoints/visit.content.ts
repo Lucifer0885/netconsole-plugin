@@ -1,5 +1,6 @@
 import { isClientListUrl, kindsFromClients, type ClientStatsMessage } from "../src/client-stats";
-import { answerCleanRequests, noteHeader, noteRequest } from "../src/task-cleaner";
+import { usersByClient, type ClientVisitsRequest, type ClientVisitsResult } from "../src/client-visits";
+import { answerCleanRequests, noteHeader, noteRequest, storeGet } from "../src/task-cleaner";
 import { entriesFromClients, entryFromVisit, visitIdFromUrl, type VisitNoteMessage } from "../src/visit-notes";
 
 function wanted(url: string): boolean {
@@ -16,6 +17,7 @@ function publish(url: string, body: unknown): void {
     return;
   }
   if (isClientListUrl(url)) {
+    lastUsers = usersByClient(body);
     lastNotes = { source: "netconsole", type: "visit-notes", single: false, visits: entriesFromClients(body) };
     window.postMessage(lastNotes, location.origin);
     const kinds = kindsFromClients(body);
@@ -26,6 +28,33 @@ function publish(url: string, body: unknown): void {
 }
 
 let lastNotes: VisitNoteMessage | null = null;
+let lastUsers: Map<string, string[]> | null = null;
+
+// Who is on a PC: fetch a fresh client list (read-only) so the answer is current; fall back
+// to the last list eplay loaded if that isn't possible.
+function answerClientVisits(send: typeof fetch): void {
+  window.addEventListener("message", (event) => {
+    if (event.source !== window) return;
+    const data = event.data as Partial<ClientVisitsRequest> | null;
+    if (data?.source !== "netconsole" || data.type !== "client-visits") return;
+    if (typeof data.id !== "string" || typeof data.client !== "string") return;
+    const { id, client } = data;
+    void storeGet(send, "clients/active").then((body) => {
+      if (body) lastUsers = usersByClient(body);
+      const users = lastUsers?.get(client);
+      const message: ClientVisitsResult = {
+        source: "netconsole",
+        type: "client-visits-done",
+        id,
+        client,
+        users: users ?? [],
+        fresh: Boolean(body),
+        unknown: !lastUsers || users === undefined,
+      };
+      window.postMessage(message, location.origin);
+    });
+  });
+}
 
 let lastClients: ClientStatsMessage | null = null;
 
@@ -97,6 +126,9 @@ export default defineContentScript({
     hookFetch();
     hookXhr();
     answerReplays();
-    if (location.hostname === "eplay.netconsole.me") answerCleanRequests(originalFetch);
+    if (location.hostname === "eplay.netconsole.me") {
+      answerCleanRequests(originalFetch);
+      answerClientVisits(originalFetch);
+    }
   },
 });

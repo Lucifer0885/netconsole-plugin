@@ -33,6 +33,21 @@ export function noteHeader(url: string, name: string, value: string): void {
   if (copied.includes(key)) headers.set(key, value);
 }
 
+// GET a store API path (e.g. "clients/active") with eplay's own headers. Null when eplay
+// hasn't made a request yet that we could borrow the headers from, or the request failed.
+export async function storeGet(send: typeof fetch, path: string): Promise<unknown | null> {
+  if (!storeId || !headers.has("authorization")) return null;
+  try {
+    const response = await send(`/api/stores/${storeId}/${path}`, {
+      headers: Object.fromEntries(headers),
+      credentials: "include",
+    });
+    return response.ok ? ((await response.json()) as unknown) : null;
+  } catch {
+    return null;
+  }
+}
+
 type Task = { id?: unknown; type?: unknown };
 
 async function cleanAll(
