@@ -1,4 +1,5 @@
 import { account } from "./account";
+import { clientDialog } from "./client-dialog";
 import { clientTypes } from "./client-types";
 import { ready } from "./ready";
 import { shiftTotal } from "./shift-total";
@@ -7,4 +8,4 @@ import { theme } from "./theme";
 import type { Patch } from "./types";
 import { visitNote } from "./visit-note";
 
-export const patches: readonly Patch[] = [ready, theme, account, visitNote, clientTypes, storeTasks, shiftTotal];
+export const patches: readonly Patch[] = [ready, theme, account, visitNote, clientTypes, storeTasks, shiftTotal, clientDialog];

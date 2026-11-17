@@ -513,6 +513,18 @@ html.nc-dark .text-grey-8 {
   color: #d6dde1 !important;
 }
 
+/* Light hover backgrounds, e.g. items in the PC right-click menu on the Clients map. */
+html.nc-dark .hover\:bg-surface-muted:hover,
+html.nc-dark .hover\:bg-surface:hover,
+html.nc-dark .hover\:bg-white:hover,
+html.nc-dark .hover\:bg-slate-50:hover,
+html.nc-dark .hover\:bg-slate-100:hover,
+html.nc-dark .hover\:bg-gray-50:hover,
+html.nc-dark .hover\:bg-gray-100:hover,
+html.nc-dark .hover\:bg-blue-50:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
 .nc-visit-note {
   display: flex;
   gap: 8px;
@@ -669,4 +681,9 @@ html.nc-dark .nc-clean-all {
 
 html.nc-dark .nc-shift-total__label {
   color: #bdbdbd;
+}
+
+.nc-dialog-client {
+  padding-top: 0;
+  font-size: 15px;
 }
