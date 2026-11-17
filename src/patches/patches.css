@@ -407,6 +407,45 @@ html.nc-dark [style*="--action-color"] .action-card__icon {
   color: color-mix(in srgb, var(--action-color) 35%, transparent) !important;
 }
 
+/* eplay switches to its own dark palette when the body is dark, which makes primary a light
+   blue but keeps white text on filled primary buttons and pills (ALL, Start visit, badges).
+   Admin pages are excluded: there primary fills are forced back to navy, where white works. */
+html.nc-dark:not(.nc-brand-navy) .bg-primary.text-white,
+html.nc-dark:not(.nc-brand-navy) .package-pill[style*="--q-primary"] {
+  color: #0b1a33 !important;
+}
+
+/* Light blue panels, e.g. the selected package under Active session. */
+html.nc-dark .bg-blue-50,
+html.nc-dark .bg-blue-100 {
+  background-color: #1a2744 !important;
+  color: #e8eefc !important;
+}
+
+/* eplay dashboard: stat numbers, sidebar section label and version footer. */
+html.nc-dark .text-slate-950,
+html.nc-dark .text-gray-950,
+html.nc-dark .text-zinc-950,
+html.nc-dark .text-zinc-900,
+html.nc-dark .text-neutral-950,
+html.nc-dark .text-neutral-900 {
+  color: #f2f2f2 !important;
+}
+
+/* These use eplay's accent colour, a very dark green. */
+html.nc-dark .b-drawer-recursive-item__category,
+html.nc-dark .b-drawer-recursive-item__category-label,
+html.nc-dark .b-drawer--version-container,
+html.nc-dark .b-drawer--title {
+  color: #8fd6a5 !important;
+}
+
+/* The usage chart is an ECharts canvas, so its title, legend and grid can't be restyled.
+   Inverting and rotating the hue back keeps the line colours and makes the text light. */
+html.nc-dark .b-line-chart canvas {
+  filter: invert(1) hue-rotate(180deg);
+}
+
 .nc-visit-note {
   display: flex;
   gap: 8px;
