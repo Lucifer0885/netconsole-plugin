@@ -446,6 +446,73 @@ html.nc-dark .b-line-chart canvas {
   filter: invert(1) hue-rotate(180deg);
 }
 
+/* eplay Account Details: side tabs panel and balance card. */
+html.nc-dark .account-overview-tab-drawer {
+  background-color: #1b1b1b !important;
+  border-color: #333 !important;
+}
+
+html.nc-dark .account-overview-tab-item.q-tab--active {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.nc-dark .bg-brand-50 {
+  background-color: #14301f !important;
+}
+
+html.nc-dark .text-brand-900,
+html.nc-dark .text-brand-800 {
+  color: #c9f2d6 !important;
+}
+
+/* Pastel panels (note cards by level, alerts, info boxes) get a dark tint of the same hue. */
+html.nc-dark .bg-sky-50,
+html.nc-dark .bg-sky-100 {
+  background-color: #132a3a !important;
+}
+
+html.nc-dark .bg-amber-50,
+html.nc-dark .bg-amber-100,
+html.nc-dark .bg-yellow-50,
+html.nc-dark .bg-yellow-100,
+html.nc-dark .bg-orange-50,
+html.nc-dark .bg-orange-100 {
+  background-color: #33270f !important;
+}
+
+html.nc-dark .bg-red-50,
+html.nc-dark .bg-red-100,
+html.nc-dark .bg-rose-50,
+html.nc-dark .bg-rose-100 {
+  background-color: #3a1717 !important;
+}
+
+html.nc-dark .bg-green-50,
+html.nc-dark .bg-green-100,
+html.nc-dark .bg-emerald-50,
+html.nc-dark .bg-emerald-100 {
+  background-color: #14301f !important;
+}
+
+html.nc-dark .bg-indigo-50,
+html.nc-dark .bg-violet-50,
+html.nc-dark .bg-purple-50 {
+  background-color: #241d3a !important;
+}
+
+/* Quasar grey badges, e.g. the store chip on a note. */
+html.nc-dark .bg-blue-grey-1,
+html.nc-dark .bg-blue-grey-2,
+html.nc-dark .bg-grey-2 {
+  background-color: #333 !important;
+}
+
+html.nc-dark .text-blue-grey-9,
+html.nc-dark .text-blue-grey-8,
+html.nc-dark .text-grey-8 {
+  color: #d6dde1 !important;
+}
+
 .nc-visit-note {
   display: flex;
   gap: 8px;
