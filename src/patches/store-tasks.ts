@@ -1,5 +1,11 @@
-import { lastAutoClean, settings } from "../settings";
-import type { CleanTasksAck, CleanTasksRequest, CleanTasksResult } from "../store-tasks";
+import { lastAutoClean, lastAutoClearDisconnects, settings } from "../settings";
+import {
+  cleanTaskType,
+  disconnectTaskType,
+  type CleanTasksAck,
+  type CleanTasksRequest,
+  type CleanTasksResult,
+} from "../store-tasks";
 import type { Patch } from "./types";
 
 const onEplay = location.hostname === "eplay.netconsole.me";
@@ -26,7 +32,7 @@ window.addEventListener("message", (event) => {
   }
 });
 
-function requestClean(): Promise<CleanTasksResult> {
+function requestClean(types: string[]): Promise<CleanTasksResult> {
   const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   return new Promise((resolve) => {
     const fail = (error: CleanTasksResult["error"]) => {
@@ -44,7 +50,7 @@ function requestClean(): Promise<CleanTasksResult> {
         resolve(result);
       },
     });
-    const message: CleanTasksRequest = { source: "netconsole", type: "clean-tasks", id };
+    const message: CleanTasksRequest = { source: "netconsole", type: "clean-tasks", id, types };
     window.postMessage(message, location.origin);
   });
 }
@@ -85,12 +91,12 @@ function describe(result: CleanTasksResult): string {
   return result.failed ? `Cleaned ${result.cleaned}, ${result.failed} failed` : `Cleaned ${result.cleaned}`;
 }
 
-async function cleanNow(): Promise<CleanTasksResult | null> {
+async function cleanNow(types: string[]): Promise<CleanTasksResult | null> {
   if (running) return null;
   running = true;
   paint(document);
   try {
-    const result = await requestClean();
+    const result = await requestClean(types);
     if (result.error === "no-reply") {
       console.warn(
         "[netconsole] Clean all: the page script didn't answer. Reload the extension (or restart `npm run dev`) and refresh the page.",
@@ -113,7 +119,7 @@ function button(root: Document): HTMLButtonElement {
     // The header toggles the drawer section when clicked, so keep the click to ourselves.
     event.preventDefault();
     event.stopPropagation();
-    void cleanNow().then((result) => {
+    void cleanNow([cleanTaskType, disconnectTaskType]).then((result) => {
       if (result) showNote(describe(result));
     });
   });
@@ -137,19 +143,49 @@ function paint(root: Document): void {
   const span = el.querySelector("span");
   if (span && span.textContent !== label) span.textContent = label;
   el.disabled = running;
-  el.title = "Mark every PC clean task as done";
+  el.title = "Mark every PC clean and client disconnected task as done";
 }
 
-// Auto clean: checked every 30 seconds, runs once per interval across all open eplay tabs.
+// Auto clean: two independent jobs, checked every 30 seconds. Each runs once per its own
+// interval across all open eplay tabs (the last run time is shared through storage).
+type Job = {
+  enabled: () => boolean;
+  minutes: () => number;
+  last: typeof lastAutoClean;
+  types: string[];
+  done: string;
+};
+
+const jobs: Job[] = [
+  {
+    enabled: () => settings.autoClean,
+    minutes: () => settings.autoCleanMinutes,
+    last: lastAutoClean,
+    types: [cleanTaskType],
+    done: "Auto cleaned",
+  },
+  {
+    enabled: () => settings.autoClearDisconnects,
+    minutes: () => settings.autoClearDisconnectsMinutes,
+    last: lastAutoClearDisconnects,
+    types: [disconnectTaskType],
+    done: "Auto cleared",
+  },
+];
+
+async function runJob(job: Job): Promise<void> {
+  if (!job.enabled() || running) return;
+  const last = await job.last.getValue();
+  if (Date.now() - last < job.minutes() * 60_000) return;
+  await job.last.setValue(Date.now());
+  const result = await cleanNow(job.types);
+  // Not ready or no reply: eplay hasn't loaded enough yet. Retry on the next check.
+  if (!result || result.error === "not-ready" || result.error === "no-reply") await job.last.setValue(last);
+  if (result?.cleaned) showNote(`${job.done} ${result.cleaned}`);
+}
+
 async function autoCleanTick(): Promise<void> {
-  if (!settings.autoClean || running) return;
-  const last = await lastAutoClean.getValue();
-  if (Date.now() - last < settings.autoCleanMinutes * 60_000) return;
-  await lastAutoClean.setValue(Date.now());
-  const result = await cleanNow();
-  // Not ready means eplay hasn't made a request we can borrow headers from yet. Retry soon.
-  if (result?.error === "not-ready" || result?.error === "no-reply") await lastAutoClean.setValue(last);
-  if (result?.cleaned) showNote(`Auto cleaned ${result.cleaned}`);
+  for (const job of jobs) await runJob(job);
 }
 
 if (onEplay) {

@@ -1,5 +1,5 @@
 import {
-  cleanTaskType,
+  resolvableTypes,
   storeIdFromUrl,
   type CleanTasksAck,
   type CleanTasksRequest,
@@ -35,7 +35,11 @@ export function noteHeader(url: string, name: string, value: string): void {
 
 type Task = { id?: unknown; type?: unknown };
 
-async function cleanAll(send: typeof fetch): Promise<Omit<CleanTasksResult, "source" | "type" | "id">> {
+async function cleanAll(
+  send: typeof fetch,
+  types: Set<string>,
+): Promise<Omit<CleanTasksResult, "source" | "type" | "id">> {
+  if (!types.size) return { cleaned: 0, failed: 0 };
   if (!storeId || !headers.has("authorization")) return { cleaned: 0, failed: 0, error: "not-ready" };
   const init = { headers: Object.fromEntries(headers), credentials: "include" as const };
   const base = `/api/stores/${storeId}/tasks`;
@@ -54,7 +58,8 @@ async function cleanAll(send: typeof fetch): Promise<Omit<CleanTasksResult, "sou
   let cleaned = 0;
   let failed = 0;
   for (const task of tasks) {
-    if (task?.type !== cleanTaskType || (typeof task.id !== "number" && typeof task.id !== "string")) continue;
+    if (typeof task?.type !== "string" || !types.has(task.type)) continue;
+    if (typeof task.id !== "number" && typeof task.id !== "string") continue;
     try {
       const response = await send(`${base}/${task.id}`, {
         ...init,
@@ -87,7 +92,9 @@ export function answerCleanRequests(send: typeof fetch): void {
       return;
     }
     busy = true;
-    void cleanAll(send)
+    const requested = Array.isArray(data.types) ? data.types : [];
+    const types = new Set(resolvableTypes.filter((type) => requested.includes(type)));
+    void cleanAll(send, types)
       .then(reply)
       .finally(() => {
         busy = false;

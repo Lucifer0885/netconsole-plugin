@@ -1,4 +1,13 @@
-import { autoClean, autoCleanMinutes, cleanMinutes, darkTheme, settings, showThemeButton } from "../settings";
+import {
+  autoClean,
+  autoCleanMinutes,
+  autoClearDisconnects,
+  autoClearDisconnectsMinutes,
+  cleanMinutes,
+  darkTheme,
+  settings,
+  showThemeButton,
+} from "../settings";
 import type { Patch } from "./types";
 
 function onAccountPage(): boolean {
@@ -66,7 +75,9 @@ function switchRow(
   return row;
 }
 
-function minutesRow(title: string, detail: string): HTMLDivElement {
+type MinutesItem = typeof autoCleanMinutes;
+
+function minutesRow(title: string, detail: string, value: number, item: MinutesItem): HTMLDivElement {
   const row = document.createElement("div");
   row.className = "nc-row";
   const copy = document.createElement("div");
@@ -82,12 +93,12 @@ function minutesRow(title: string, detail: string): HTMLDivElement {
   input.min = "1";
   input.max = "1440";
   input.step = "1";
-  input.value = String(settings.autoCleanMinutes);
+  input.value = String(value);
   input.setAttribute("aria-label", title);
   input.addEventListener("change", () => {
     const minutes = cleanMinutes(input.value);
     input.value = String(minutes);
-    void autoCleanMinutes.setValue(minutes);
+    void item.setValue(minutes);
   });
   const unit = document.createElement("span");
   unit.textContent = "min";
@@ -125,13 +136,27 @@ function accountPanel(): HTMLElement {
     ),
     switchRow(
       "Auto clean PC tasks",
-      "On eplay, mark every PC clean task as done on a timer. Help requests and other tasks are left alone. Runs while an eplay tab is open.",
+      "On eplay, mark every PC clean task as done on a timer. Help requests, disconnects and other tasks are left alone. Runs while an eplay tab is open.",
       settings.autoClean,
       () => {
         void autoClean.setValue(!settings.autoClean);
       },
     ),
-    minutesRow("Clean every", "How often the auto clean runs, in minutes."),
+    minutesRow("Clean every", "How often the PC clean auto clean runs, in minutes.", settings.autoCleanMinutes, autoCleanMinutes),
+    switchRow(
+      "Auto clear disconnect tasks",
+      "On eplay, mark every \"Client disconnected\" task as done on a timer. Separate from the PC clean setting above. Runs while an eplay tab is open.",
+      settings.autoClearDisconnects,
+      () => {
+        void autoClearDisconnects.setValue(!settings.autoClearDisconnects);
+      },
+    ),
+    minutesRow(
+      "Clear every",
+      "How often disconnect tasks are cleared, in minutes.",
+      settings.autoClearDisconnectsMinutes,
+      autoClearDisconnectsMinutes,
+    ),
   );
   return panel;
 }
@@ -169,12 +194,18 @@ export const account: Patch = {
     const section = panels.parentElement.querySelector("[data-nc-account]");
     if (!(section instanceof HTMLElement)) return;
     const rows = section.querySelectorAll<HTMLButtonElement>(".nc-switch");
-    const states = [settings.darkTheme, settings.showThemeButton, settings.autoClean];
+    const states = [settings.darkTheme, settings.showThemeButton, settings.autoClean, settings.autoClearDisconnects];
     rows.forEach((row, index) => row.setAttribute("aria-checked", states[index] ? "true" : "false"));
-    const minutes = section.querySelector<HTMLInputElement>(".nc-minutes input");
-    if (minutes && document.activeElement !== minutes) {
-      minutes.value = String(settings.autoCleanMinutes);
-      minutes.disabled = !settings.autoClean;
-    }
+    // Minutes fields in panel order, each greyed out while its switch is off.
+    const minutes = [
+      { value: settings.autoCleanMinutes, on: settings.autoClean },
+      { value: settings.autoClearDisconnectsMinutes, on: settings.autoClearDisconnects },
+    ];
+    section.querySelectorAll<HTMLInputElement>(".nc-minutes input").forEach((input, index) => {
+      const state = minutes[index];
+      if (!state || document.activeElement === input) return;
+      input.value = String(state.value);
+      input.disabled = !state.on;
+    });
   },
 };

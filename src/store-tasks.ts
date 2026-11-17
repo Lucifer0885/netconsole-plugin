@@ -1,10 +1,17 @@
 // Messages between the Store Tasks patch and the page script that sends the API calls.
-// Only CLEAN_PC tasks are resolved; help requests, disconnects and start checks are left alone.
+// Only PC clean and client disconnected tasks can be resolved; help requests and
+// self start checks are always left alone.
+
+export const cleanTaskType = "CLEAN_PC";
+export const disconnectTaskType = "CLIENT_DISCONNECTED";
+export const resolvableTypes: readonly string[] = [cleanTaskType, disconnectTaskType];
 
 export type CleanTasksRequest = {
   source: "netconsole";
   type: "clean-tasks";
   id: string;
+  // Which task types to resolve. Anything outside resolvableTypes is ignored.
+  types: string[];
 };
 
 // Sent straight away so the patch knows the page script is there and working on it.
@@ -24,8 +31,6 @@ export type CleanTasksResult = {
   // timeout: it answered but the clean took too long.
   error?: "not-ready" | "list-failed" | "no-reply" | "timeout";
 };
-
-export const cleanTaskType = "CLEAN_PC";
 
 export function storeIdFromUrl(url: string): string | null {
   try {

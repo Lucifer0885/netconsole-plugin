@@ -21,11 +21,27 @@ export const lastAutoClean = storage.defineItem<number>("local:lastAutoClean", {
   fallback: 0,
 });
 
+// Separate switch and timer for "Client disconnected" tasks, so PC clean tasks can be
+// auto cleaned without also clearing disconnect alerts.
+export const autoClearDisconnects = storage.defineItem<boolean>("local:autoClearDisconnects", {
+  fallback: false,
+});
+
+export const autoClearDisconnectsMinutes = storage.defineItem<number>("local:autoClearDisconnectsMinutes", {
+  fallback: 15,
+});
+
+export const lastAutoClearDisconnects = storage.defineItem<number>("local:lastAutoClearDisconnects", {
+  fallback: 0,
+});
+
 export const settings = {
   darkTheme: false,
   showThemeButton: true,
   autoClean: false,
   autoCleanMinutes: 15,
+  autoClearDisconnects: false,
+  autoClearDisconnectsMinutes: 15,
 };
 
 export function cleanMinutes(value: unknown): number {
@@ -38,6 +54,8 @@ export async function loadSettings(): Promise<void> {
   settings.showThemeButton = await showThemeButton.getValue();
   settings.autoClean = await autoClean.getValue();
   settings.autoCleanMinutes = cleanMinutes(await autoCleanMinutes.getValue());
+  settings.autoClearDisconnects = await autoClearDisconnects.getValue();
+  settings.autoClearDisconnectsMinutes = cleanMinutes(await autoClearDisconnectsMinutes.getValue());
 }
 
 export function watchSettings(onChange: () => void): () => void {
@@ -56,6 +74,14 @@ export function watchSettings(onChange: () => void): () => void {
     }),
     autoCleanMinutes.watch((value) => {
       settings.autoCleanMinutes = cleanMinutes(value);
+      onChange();
+    }),
+    autoClearDisconnects.watch((value) => {
+      settings.autoClearDisconnects = value;
+      onChange();
+    }),
+    autoClearDisconnectsMinutes.watch((value) => {
+      settings.autoClearDisconnectsMinutes = cleanMinutes(value);
       onChange();
     }),
   ];

@@ -25,7 +25,9 @@ On **admin.netconsole.me/me** there's a new **Netconsole** tab with the extensio
 | Dark theme | Dark surfaces on the netconsole apps |
 | Theme button | Shows the theme button in the header |
 | Auto clean PC tasks | Marks every PC clean task as done on a timer (see below) |
-| Clean every | How often auto clean runs, in minutes |
+| Clean every | How often the PC clean auto clean runs, in minutes |
+| Auto clear disconnect tasks | Marks every "Client disconnected" task as done on its own timer, separate from PC clean |
+| Clear every | How often disconnect tasks are cleared, in minutes |
 
 Settings are stored by the extension, so they apply to every netconsole subdomain.
 
@@ -43,13 +45,18 @@ The counts come from the response of `GET /api/stores/{store}/clients/active` th
 
 ### Store Tasks: Clean all and auto clean (eplay)
 
-The **Store Tasks** drawer gets a **Clean all** button that marks every PC clean task as done in one click.
+The **Store Tasks** drawer gets a **Clean all** button that marks every PC clean and client disconnected task as done in one click.
 
 ![Clean all button in the Store Tasks drawer](docs/screenshots/store-tasks-clean-all.png)
 
-With **Auto clean PC tasks** turned on in settings, the same clean runs every N minutes while an eplay tab is open. Several open tabs share one timer, so they don't all clean at once.
+Two separate auto cleans can run while an eplay tab is open, each with its own switch and interval in settings:
 
-Only tasks of type `CLEAN_PC` are resolved. Help requests, client disconnects and self-start checks are left alone. The extension makes the same request eplay makes when you click a task's ✓ (`DELETE /api/stores/{store}/tasks/{id}`), reusing the login headers eplay itself sends. Those headers stay in memory and are never saved.
+- **Auto clean PC tasks** resolves `CLEAN_PC` tasks.
+- **Auto clear disconnect tasks** resolves `CLIENT_DISCONNECTED` tasks.
+
+So you can auto clean PC tasks while still seeing disconnect alerts, or the other way round. Several open tabs share each timer, so they don't all clean at once.
+
+Only `CLEAN_PC` and `CLIENT_DISCONNECTED` tasks are ever resolved. Help requests and self-start checks are always left alone. The extension makes the same request eplay makes when you click a task's ✓ (`DELETE /api/stores/{store}/tasks/{id}`), reusing the login headers eplay itself sends. Those headers stay in memory and are never saved.
 
 ### End Shift total (eplay)
 
